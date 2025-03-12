@@ -45,10 +45,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "corsheaders",
+    'rest_framework',
+    'rest_framework_simplejwt',
     'api',
 ]
 
 MIDDLEWARE = [
+     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -79,7 +83,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'project.wsgi.application'
 
+CORS_ALLOW_ALL_ORIGINS = False  
+CORS_ORIGINS_WHITELIST = ["http://localhost:5174"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5174", 
+    "http://127.0.0.1:5174",
+]
 
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    'authorization',
+    'content-type',
+    'x-csrftoken'
+]
+
+CORS_EXPOSE_HEADERS = [
+    'Content-Type',
+    'X-CSRFToken',
+]
+
+SESSION_COOKIE_SAMESITE = None
+
+CSRF_COOKIE_SAMESITE = None
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5174", 
+    "http://127.0.0.1:5174",
+]
 # Database
 # https://docs.djangoproject.com/en/stable/ref/settings/#databases
 
@@ -106,6 +137,19 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication', 
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.permissions.AllowAny',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated', 
+    ),
+
+}
 
 
 # Internationalization
