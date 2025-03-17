@@ -9,7 +9,8 @@ from .views import (
     restaurant_site_users_api,  
     restaurant_site_user_api, 
     RestaurantListView,
-    get_cuisines, update_favorite_cuisines
+    get_cuisines, update_favorite_cuisines,
+    reservations_api,
     
 )
 from django.contrib import admin
@@ -51,4 +52,6 @@ urlpatterns = [
 
     path('cuisines/', get_cuisines, name='get_cuisines'),
     path('update_favorite_cuisines/', update_favorite_cuisines, name='update_favorite_cuisines'),
+
+    path("reservations/", reservations_api, name="reservations_api"),
 ]

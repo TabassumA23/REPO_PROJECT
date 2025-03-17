@@ -10,6 +10,17 @@
     <button @click="logout">Logout</button>
     </div>
 
+    <div class="profile-section">
+    <h2>All Restaurants</h2>
+    <ul v-if="restaurants?.length">
+        <li v-for="restaurant in restaurants" :key="restaurant.id">
+        {{ restaurant.name }} - {{ restaurant.address }}
+        </li>
+    </ul>
+    <p v-else>No restaurants available.</p>
+    </div>
+
+
     <!-- Navigation to other pages -->
     <div class="profile-section">
       <h2>Manage Your Account</h2>
@@ -94,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { ref,computed, onMounted } from "vue";
 import { useUserStore } from "../stores/user";  
 import { useReservationsStore } from "../stores/reservations";
 import { useRouter } from "vue-router";
@@ -107,11 +118,31 @@ const reservationsStore = useReservationsStore();
 const user = computed(() => userStore.user);
 const reservations = computed(() => reservationsStore.reservations);
 
-onMounted(async () => {
-  await userStore.fetchUser();
-  await reservationsStore.fetchReservations();
-});
+const restaurants = ref([]);
+const token = localStorage.getItem("token");
+console.log(localStorage.getItem("token"));
 
+
+onMounted(async () => {
+    await userStore.fetchUser();
+  await reservationsStore.fetchReservations();
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found.");
+      return;
+    }
+
+    const res = await axios.get("http://127.0.0.1:8000/restaurants/", {
+      headers: { Authorization: `Bearer ${token}` },  // ✅ Include token
+    });
+
+    console.log("Fetched Restaurants:", res.data);
+    restaurants.value = res.data;  // ✅ Store fetched restaurants
+  } catch (error) {
+    console.error("Error fetching restaurants:", error);
+  }
+});
 
 const fetchUser = async () => {
   try {
@@ -130,8 +161,6 @@ const fetchUser = async () => {
   }
 };
 
-// Fetch user when component mounts
-onMounted(fetchUser);
 
 const fetchReservations = async () => {
   try {
@@ -151,6 +180,22 @@ const fetchReservations = async () => {
   }
 };
 
+const fetchRestaurants = async () => {
+  try {
+    const response = await axios.get("http://127.0.0.1:8000/restaurants/");
+    console.log("Fetched Restaurants Data:", response.data);
+
+    restaurants.value = response.data;  // ✅ Store fetched restaurants in a reactive variable
+  } catch (error) {
+    console.error("Error fetching restaurants:", error);
+  }
+};
+
+
+// Fetch restaurants when component loads
+onMounted(fetchRestaurants);
+
+
 const removeSavedRestaurant = async (restaurantId: number) => {
   await axios.delete(`http://localhost:8000/users/${user.value?.id}/remove-saved/${restaurantId}/`);
   await userStore.fetchUser();
@@ -165,6 +210,10 @@ const logout = () => {
   localStorage.removeItem("token");
   router.push("/login");
 };
+
+// Fetch user when component mounts
+onMounted(fetchUser);
+onMounted(fetchReservations);
 </script>
 
 <style scoped>

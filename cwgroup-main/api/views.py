@@ -300,3 +300,12 @@ def update_favorite_cuisines(request):
     user.fav_cuisines.set(selected_cuisines)  # Update ManyToManyField
 
     return Response({"message": "Favorite cuisines updated successfully"}, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])  # ✅ Ensures only logged-in users can access
+def reservations_api(request):
+    """Retrieve all reservations for the logged-in user."""
+    user = request.user
+    reservations = Reservation.objects.filter(user=user)
+    serializer = ReservationSerializer(reservations, many=True)
+    return Response(serializer.data)

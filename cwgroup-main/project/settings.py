@@ -96,6 +96,13 @@ CORS_ALLOW_HEADERS = [
     'authorization',
     'content-type',
     'x-csrftoken'
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-requested-with',
 ]
 
 CORS_EXPOSE_HEADERS = [
@@ -151,6 +158,14 @@ REST_FRAMEWORK = {
 
 }
 
+CORS_ALLOW_METHODS = [
+'DELETE',
+'GET',
+'OPTIONS',
+'PATCH',
+'POST',
+'PUT',
+]
 
 # Internationalization
 # https://docs.djangoproject.com/en/stable/topics/i18n/
