@@ -5,8 +5,8 @@ export interface User {
     first_name: string;
     last_name: string;
     email: string;
-    date_of_birth: string; // YYYY-MM-DD format
-    password?: string; // Optional for security reasons
+    date_of_birth: string; 
+    password?: string; 
     fav_cuisines: Cuisine[];
     dietary_restrictions: DietaryRestriction[];
     saved_restaurants: Restaurant[];
@@ -32,8 +32,8 @@ export interface Restaurant {
     address: string;
     cuisine: Cuisine;
     dietary_options: DietaryRestriction[];
-    price_range: "$" | "$$" | "$$$"; // Enum-like structure for price
-    opening_hours: Record<string, string>; // Example: { "Monday": "9AM-10PM" }
+    price_range: "$" | "$$" | "$$$"; 
+    opening_hours: Record<string, string>;
     website?: string;
     contact_number?: string;
 }
@@ -43,9 +43,9 @@ export interface Review {
     id: number;
     user: User;
     restaurant: Restaurant;
-    rating: 1 | 2 | 3 | 4 | 5; // Ensures valid ratings
+    rating: 1 | 2 | 3 | 4 | 5; 
     comment?: string;
-    created_at: string; // ISO date format
+    created_at: string; 
 }
 
 // Reservation Interface
@@ -53,7 +53,7 @@ export interface Reservation {
     id: number;
     user: User;
     restaurant: Restaurant;
-    reservation_time: string; // ISO date format (e.g., "2024-02-19T19:30:00Z")
+    reservation_time: string; 
     number_of_people: number;
     status: "Pending" | "Confirmed" | "Cancelled";
 }
@@ -71,5 +71,5 @@ export interface Recommendation {
     id: number;
     user: User;
     restaurant: Restaurant;
-    reason: string; // "Based on your preferences", "Highly rated near you"
+    reason: string;
 }

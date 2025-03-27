@@ -1,31 +1,10 @@
 <template>
   <div class="profile-container">
-    <h1>Welcome, {{ user?.username || "Guest" }}</h1>
-
-    <div class="profile-section">
-    <h2>Profile Information</h2>
-    <p>ID: {{ user?.id }}</p>  <!-- Add ID to verify -->
-    <p>Username: {{ user?.username }}</p>
-    <p>Email: {{ user?.email }}</p>
-    <button @click="logout">Logout</button>
-    </div>
-
-    <div class="profile-section">
-    <h2>All Restaurants</h2>
-    <ul v-if="restaurants?.length">
-        <li v-for="restaurant in restaurants" :key="restaurant.id">
-        {{ restaurant.name }} - {{ restaurant.address }}
-        </li>
-    </ul>
-    <p v-else>No restaurants available.</p>
-    </div>
-
-
-    <!-- Navigation to other pages -->
+   <!-- Navigation to other pages -->
     <div class="profile-section">
       <h2>Manage Your Account</h2>
       <router-link to="/reservations">
-        <button class="nav-btn">View Reservations</button>
+        <button class="nav-btn">Make Reservations</button>
       </router-link>
       <router-link to="/wishlist">
         <button class="nav-btn">View Wishlist</button>
@@ -37,36 +16,63 @@
         <button class="nav-btn">Get Recommendations</button>
       </router-link>
     </div>
-  
 
-    <!-- Favorite Cuisines -->
+    <h1>Welcome, {{ userStore.user?.username || "Guest" }}</h1>
+
+
     <div class="profile-section">
-      <h2>Favorite Cuisines</h2>
-      <ul>
-        <li v-for="cuisine in user?.fav_cuisines" :key="cuisine.id">
-          {{ cuisine.name }}
-        </li>
-      </ul>
+    <h2>Profile Information</h2>
+    <p>ID: {{ userStore.user?.id }}</p>  
+    <p>Username: {{ userStore.user?.username }}</p>
+    <p>Email: {{ userStore.user?.email }}</p>
+
+    <button @click="logout">Logout</button>
     </div>
 
-    <div class="profile-container">
-    <h1>Welcome, {{ user?.username }}</h1>
+    <div>
+    <h2>All Restaurants</h2>
+    <ul v-if="restaurantsStore.restaurants.length">
+      <li v-for="restaurant in restaurantsStore.restaurants" :key="restaurant.id">
+        {{ restaurant.name }} - {{ restaurant.address }}
+      </li>
+    </ul>
+    <p v-else>No restaurants available.</p>
+    </div>
 
+
+   
+  
+
+   <div class="profile-section">
+    <h2>Favorite Cuisines</h2>
+    <ul>
+      <li v-for="cuisine in user?.fav_cuisines" :key="cuisine.id">
+        {{ cuisine.name }}
+      </li>
+    </ul>
+  </div>
+
+
+   
+    <!-- Favorite Cuisines -->
+    <div class="favcuisine-section">
     <h2>Select Your Favorite Cuisines</h2>
     <form @submit.prevent="saveFavoriteCuisines">
-      <div v-for="cuisine in cuisines" :key="cuisine.id">
+        <div v-for="cuisine in cuisinesStore.cuisines" :key="cuisine.id">  <!-- ✅ Fix here -->
         <label>
-          <input 
+            <input 
             type="checkbox" 
             :value="cuisine.id" 
             v-model="selectedCuisines" 
-          />
-          {{ cuisine.name }}
+            />
+            {{ cuisine.name }}
         </label>
-      </div>
-      <button type="submit">Save Preferences</button>
+        </div>
+        <button type="submit">Save Preferences</button>
     </form>
-  </div>
+    </div>
+
+  
     <!-- Dietary Restrictions -->
     <div class="profile-section">
       <h2>Dietary Restrictions</h2>
@@ -105,115 +111,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref,computed, onMounted } from "vue";
+import { computed, onMounted, ref} from "vue"; 
 import { useUserStore } from "../stores/user";  
-import { useReservationsStore } from "../stores/reservations";
-import { useRouter } from "vue-router";
-import axios from "axios";
+import { useReservationsStore } from "../stores/reservations"; 
+import { useRestaurantsStore } from "../stores/restaurants";
+import { useCuisinesStore } from "../stores/cuisines";
+import { useAuthStore } from "../stores/auth";
 
-const router = useRouter();
-const userStore = useUserStore();  
-const reservationsStore = useReservationsStore();
+
+const userStore = useUserStore();
+const reservationsStore = useReservationsStore(); 
+const restaurantsStore = useRestaurantsStore();
+const cuisinesStore = useCuisinesStore();
+const authStore = useAuthStore();
 
 const user = computed(() => userStore.user);
-const reservations = computed(() => reservationsStore.reservations);
+const selectedCuisines = ref(null);
 
-const restaurants = ref([]);
-const token = localStorage.getItem("token");
-console.log(localStorage.getItem("token"));
-
+const saveFavoriteCuisines = () => {
+  userStore.saveFavoriteCuisines(selectedCuisines.value);
+};
 
 onMounted(async () => {
-    await userStore.fetchUser();
+  if (!authStore.accessToken) {
+    console.error("User is not authenticated");
+    return;
+  }
+
+  await authStore.fetchUser();
+  await restaurantsStore.fetchRestaurants();
   await reservationsStore.fetchReservations();
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found.");
-      return;
-    }
+  await cuisinesStore.fetchCuisines();
 
-    const res = await axios.get("http://127.0.0.1:8000/restaurants/", {
-      headers: { Authorization: `Bearer ${token}` },  // ✅ Include token
-    });
-
-    console.log("Fetched Restaurants:", res.data);
-    restaurants.value = res.data;  // ✅ Store fetched restaurants
-  } catch (error) {
-    console.error("Error fetching restaurants:", error);
-  }
-});
-
-const fetchUser = async () => {
-  try {
-    const userId = localStorage.getItem("user_id");
-    if (!userId) {
-      console.error("No user ID found in localStorage");
-      return;
-    }
-
-    const response = await axios.get(`http://127.0.0.1:8000/users/${userId}/`);
-    console.log("Fetched User Data:", response.data);
-
-    userStore.setUser(response.data);  // ✅ Ensure this function exists in the store
-  } catch (error) {
-    console.error("Error fetching user:", error);
-  }
-};
-
-
-const fetchReservations = async () => {
-  try {
-    const response = await axios.get("http://127.0.0.1:8000/reservations/", {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.data) throw new Error("No data returned");
-
-    reservationsStore.reservations = response.data;
-    console.log("Fetched Reservations:", response.data);
-  } catch (error) {
-    console.error("Error fetching reservations:", error);
-  }
-};
-
-const fetchRestaurants = async () => {
-  try {
-    const response = await axios.get("http://127.0.0.1:8000/restaurants/");
-    console.log("Fetched Restaurants Data:", response.data);
-
-    restaurants.value = response.data;  // ✅ Store fetched restaurants in a reactive variable
-  } catch (error) {
-    console.error("Error fetching restaurants:", error);
-  }
-};
-
-
-// Fetch restaurants when component loads
-onMounted(fetchRestaurants);
-
-
-const removeSavedRestaurant = async (restaurantId: number) => {
-  await axios.delete(`http://localhost:8000/users/${user.value?.id}/remove-saved/${restaurantId}/`);
   await userStore.fetchUser();
-};
-
-const cancelReservation = async (reservationId: number) => {
-  await axios.delete(`http://localhost:8000/reservation/${reservationId}/`);
-  await reservationsStore.fetchReservations();
-};
-
-const logout = () => {
-  localStorage.removeItem("token");
-  router.push("/login");
-};
-
-// Fetch user when component mounts
-onMounted(fetchUser);
-onMounted(fetchReservations);
+});
 </script>
 
 <style scoped>

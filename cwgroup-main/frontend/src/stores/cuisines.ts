@@ -2,13 +2,13 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "./auth";
 
-export const useReservationsStore = defineStore("reservations", {
+export const useCuisinesStore = defineStore("cuisines", {
   state: () => ({
-    reservations: [],
+    cuisines: [],
   }),
 
   actions: {
-    async fetchReservations() {
+    async fetchCuisines() {
       const authStore = useAuthStore();
       if (!authStore.accessToken) {
         console.error("User not authenticated");
@@ -16,13 +16,13 @@ export const useReservationsStore = defineStore("reservations", {
       }
 
       try {
-        const response = await axios.get("http://127.0.0.1:8000/reservations/", {
+        const response = await axios.get("http://127.0.0.1:8000/cuisines/", {
           headers: { Authorization: `Bearer ${authStore.accessToken}` },
         });
 
-        this.reservations = response.data; // ✅ Store reservations
+        this.cuisines = response.data; // ✅ Store cuisines
       } catch (error) {
-        console.error("Error fetching reservations:", error.response?.data || error);
+        console.error("Error fetching cuisines:", error.response?.data || error);
       }
     },
   },

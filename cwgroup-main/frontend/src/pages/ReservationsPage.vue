@@ -14,9 +14,10 @@
     <form @submit.prevent="bookReservation">
       <label>Restaurant:
         <select v-model="selectedRestaurant">
-          <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.id">
+        <option v-for="restaurant in restaurants" :key="restaurant.id" :value="restaurant.id">
             {{ restaurant.name }}
-          </option>
+        </option>
+
         </select>
       </label>
       <label>Reservation Time:
@@ -55,7 +56,7 @@ const headers = {
 // Fetch Reservations
 const fetchReservations = async () => {
   try {
-    const res = await axios.get("http://127.0.0.1:8000/api/reservations/", { headers });
+    const res = await axios.get("http://127.0.0.1:8000/reservations/", { headers });
     reservations.value = res.data;
   } catch (error) {
     console.error("Error fetching reservations:", error);
@@ -65,12 +66,16 @@ const fetchReservations = async () => {
 // Fetch Restaurants
 const fetchRestaurants = async () => {
   try {
-    const restRes = await axios.get("http://127.0.0.1:8000/api/restaurants/", { headers });
-    restaurants.value = restRes.data;
+    const response = await axios.get("http://127.0.0.1:8000/restaurants/");
+    console.log("Fetched Restaurants Data:", response.data);
+
+    restaurants.value = response.data;  //Store fetched restaurants in a reactive variable
   } catch (error) {
     console.error("Error fetching restaurants:", error);
   }
 };
+
+
 
 // Watch for userId and Fetch Data
 watch(userId, (newId) => {
@@ -108,6 +113,12 @@ const cancelReservation = async (reservationId: number) => {
 
 // Format Date
 const formatDate = (dateStr: string) => new Date(dateStr).toLocaleString();
+
+
+
+// Fetch restaurants when component loads
+onMounted(fetchRestaurants);
+
 </script>
 
 <style scoped>

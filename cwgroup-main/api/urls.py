@@ -10,12 +10,16 @@ from .views import (
     restaurant_site_user_api, 
     RestaurantListView,
     get_cuisines, update_favorite_cuisines,
-    reservations_api,
+    reservations_api, get_current_user,
     
 )
 from django.contrib import admin
-
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 urlpatterns = [
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path("users/me/", get_current_user, name="get_current_user"),
+
     # Admin Panel
     path('admin/', admin.site.urls),
 
@@ -54,4 +58,10 @@ urlpatterns = [
     path('update_favorite_cuisines/', update_favorite_cuisines, name='update_favorite_cuisines'),
 
     path("reservations/", reservations_api, name="reservations_api"),
+
+    # update fav cuisines on the profile page
+    path("update_favorite_cuisines/", update_favorite_cuisines, name="update_favorite_cuisines")
+
 ]
+
+

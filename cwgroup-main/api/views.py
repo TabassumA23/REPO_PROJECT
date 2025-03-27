@@ -6,6 +6,7 @@ from django.http import JsonResponse, HttpRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 
+
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -15,6 +16,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import viewsets
 from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.contrib.auth.hashers import check_password
 from .models import (
@@ -23,7 +25,7 @@ from .models import (
 )
 from .forms import SignUpForm
 from .serializers import (
-    RestaurantSerializer, ReviewSerializer, ReservationSerializer, WishlistSerializer, UserSerializer
+    RestaurantSerializer, ReviewSerializer, ReservationSerializer, WishlistSerializer, UserSerializer, CuisineSerializer
 )
 from datetime import datetime
 
@@ -68,7 +70,7 @@ def signup_api(request):
 #login api
 @csrf_exempt
 def login_api(request):
-    """API to authenticate users from `api_users` instead of Django's default auth."""
+    """API to authenticate users and return JWT tokens."""
     if request.method != "POST":
         return JsonResponse({"error": "Method Not Allowed"}, status=405)
 
@@ -80,20 +82,29 @@ def login_api(request):
         if not username or not password:
             return JsonResponse({"error": "Username and password required"}, status=400)
 
-        # Find user in api_users(RestaurantSiteUser)
+        # Authenticate user from RestaurantSiteUser
         try:
             user = RestaurantSiteUser.objects.get(username=username)
         except RestaurantSiteUser.DoesNotExist:
             return JsonResponse({"error": "Invalid username or password"}, status=401)
 
-        
-        if check_password(password, user.password):
-            return JsonResponse({"message": "Login successful", "token": "fake-jwt-token", "user_id": user.id}, status=200)
-        else:
+        if not check_password(password, user.password):
             return JsonResponse({"error": "Invalid username or password"}, status=401)
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        return JsonResponse({
+            "message": "Login successful",
+            "access": access_token,
+            "refresh": str(refresh),  # ✅ Send refresh token as well
+            "user_id": user.id
+        }, status=200)
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid request format"}, status=400)
+    
 # Logout API
 @api_view(['POST'])
 @login_required
@@ -108,15 +119,16 @@ class RestaurantListView(APIView):
         serializer = RestaurantSerializer(restaurants, many=True)
         return Response({"restaurants": serializer.data})
     
-@api_view(['GET'])
-@authentication_classes([SessionAuthentication, BasicAuthentication])
-@permission_classes([AllowAny])  # Allows access to anyone
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def restaurants_api(request):
-    """Retrieve all restaurants from the database."""
-    restaurants = Restaurant.objects.all()
-    serializer = RestaurantSerializer(restaurants, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
+    try:
+        restaurants = Restaurant.objects.all()
+        serializer = RestaurantSerializer(restaurants, many=True)
+        return Response(serializer.data, status=200)
+    except Exception as e:
+        print("Error fetching restaurants:", str(e))  # Debugging
+        return Response({"error": str(e)}, status=500)
 
 # Retrieve, update, or delete a restaurant
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -289,17 +301,17 @@ def get_cuisines(request):
 @permission_classes([IsAuthenticated])  # Requires login
 def update_favorite_cuisines(request):
     """Update user's favorite cuisines."""
-    user = request.user
+    user = request.user  # Ensure user is authenticated
     data = request.data
     cuisine_ids = data.get("cuisine_ids", [])  # List of selected cuisine IDs
 
     if not cuisine_ids:
-        return Response({"error": "No cuisines selected"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "No cuisines selected"}, status=400)
 
     selected_cuisines = Cuisine.objects.filter(id__in=cuisine_ids)
     user.fav_cuisines.set(selected_cuisines)  # Update ManyToManyField
 
-    return Response({"message": "Favorite cuisines updated successfully"}, status=status.HTTP_200_OK)
+    return Response({"message": "Favorite cuisines updated successfully"}, status=200)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])  # ✅ Ensures only logged-in users can access
@@ -309,3 +321,23 @@ def reservations_api(request):
     reservations = Reservation.objects.filter(user=user)
     serializer = ReservationSerializer(reservations, many=True)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_current_user(request):
+    """Returns the currently authenticated user's info."""
+    user = request.user
+    serializer = UserSerializer(user)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_favorite_cuisines(request):
+    user = request.user
+    cuisine_ids = request.data.get("cuisine_ids", [])
+
+    # Assuming user has a ManyToMany field: fav_cuisines
+    user.fav_cuisines.set(Cuisine.objects.filter(id__in=cuisine_ids))
+    user.save()
+
+    return Response({"status": "Cuisines updated successfully"})

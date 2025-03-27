@@ -23,10 +23,13 @@ import axios from "axios";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
+
+// ✅ Ensure `credentials` is properly initialized as a ref object
 const credentials = ref({
   username: "",
   password: "",
 });
+
 const message = ref("");
 
 const login = async () => {
@@ -40,26 +43,27 @@ const login = async () => {
       },
     });
 
-  const token = response.data.token;  // Get the token from response
-    if (!token) {
-      throw new Error("No token received");
+    const accessToken = response.data.access;
+    const refreshToken = response.data.refresh;
+
+    if (!accessToken || !refreshToken) {
+      throw new Error("No valid token received");
     }
-    localStorage.setItem("token", token); // Store the token
-    console.log("Token saved:", token);
-    // localStorage.setItem("token", response.data.token); // Store JWT token
-    // localStorage.setItem("user_id", response.data.user_id); // Store user ID for API calls
-    router.push("/profile"); // Redirect to profile page
+
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    localStorage.setItem("user_id", response.data.user_id);
+
+    console.log("Access Token:", accessToken);
+    console.log("Refresh Token:", refreshToken);
+
+    router.push("/profile");
 
   } catch (error) {
-    console.error("Login failed:", error.response?.data);
+    console.error("Login failed:", error.response?.data || error);
     message.value = error.response?.data?.error || "Invalid login credentials.";
   }
 };
-
-
-
-
-
 
 </script>
 
