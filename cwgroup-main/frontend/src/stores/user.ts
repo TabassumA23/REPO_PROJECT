@@ -45,8 +45,9 @@ export const useUserStore = defineStore("user", {
           { cuisine_ids: cuisineIds },
           {
             headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
+              'Authorization': `Bearer ${VueCookies.get('access_token')}`,
+              'Content-Type': 'application/json',
+              'X-CSRFToken': VueCookies.get('csrftoken'),
             },
           }
         );

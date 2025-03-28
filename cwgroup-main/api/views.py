@@ -98,7 +98,7 @@ def login_api(request):
         return JsonResponse({
             "message": "Login successful",
             "access": access_token,
-            "refresh": str(refresh),  # ✅ Send refresh token as well
+            "refresh": str(refresh), 
             "user_id": user.id
         }, status=200)
 
@@ -290,6 +290,9 @@ def restaurant_site_user_api(request, user_id):
     except RestaurantSiteUser.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)
 
+
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])  # Publicly accessible
 def get_cuisines(request):
@@ -312,6 +315,48 @@ def update_favorite_cuisines(request):
     user.fav_cuisines.set(selected_cuisines)  # Update ManyToManyField
 
     return Response({"message": "Favorite cuisines updated successfully"}, status=200)
+
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])  # Or IsAuthenticated, depending on your setup
+def cuisines_api(request):
+    if request.method == 'POST':
+        POST = json.loads(request.body)
+        cuisine = Cuisine.objects.create(
+            name=POST['name']
+        )
+        return JsonResponse(cuisine.as_dict())
+    
+    # GET all cuisines
+    return JsonResponse({
+        'cuisines': [
+            cuisine.as_dict() for cuisine in Cuisine.objects.all()
+        ]
+    })
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def update_favorite_cuisines(request):
+    """Allow user to update their favorite cuisines"""
+    try:
+        data = request.data
+        cuisine_ids = data.get("cuisine_ids", [])
+
+        # Validate and retrieve cuisines
+        cuisines = Cuisine.objects.filter(id__in=cuisine_ids)
+
+        # Update user's favorite cuisines
+        user = request.user
+        user.fav_cuisines.set(cuisines)
+        user.save()
+
+        return JsonResponse({"message": "Favorite cuisines updated successfully."})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])  # ✅ Ensures only logged-in users can access

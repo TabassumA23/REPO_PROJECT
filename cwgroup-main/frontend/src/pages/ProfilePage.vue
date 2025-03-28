@@ -52,13 +52,31 @@
     </ul>
   </div>
 
+<div class="cuisine">
+  <label for="cuisines">Choose a cuisine:</label>
+  <select id="cuisines" v-model="selectedCuisine">
+    <option v-for="cuisine in cuisinesStore.cuisines" :key="cuisine.id" :value="cuisine.id">
+      {{ cuisine.name }}
+    </option>
+  </select>
+  <button @click="addCuisine">Save Choice Here</button>
+
+  <div class="user-cuisines">
+    <h4>Your Favorite Cuisines</h4>
+    <ul>
+      <li v-for="(cuisine, index) in user?.fav_cuisines" :key="index">
+        {{ cuisine.name }}
+      </li>
+    </ul>
+  </div>
+</div>
 
    
     <!-- Favorite Cuisines -->
     <div class="favcuisine-section">
     <h2>Select Your Favorite Cuisines</h2>
     <form @submit.prevent="saveFavoriteCuisines">
-        <div v-for="cuisine in cuisinesStore.cuisines" :key="cuisine.id">  <!-- ✅ Fix here -->
+        <div v-for="cuisine in cuisinesStore.cuisines" :key="cuisine.id">
         <label>
             <input 
             type="checkbox" 
@@ -130,6 +148,31 @@ const selectedCuisines = ref(null);
 
 const saveFavoriteCuisines = () => {
   userStore.saveFavoriteCuisines(selectedCuisines.value);
+};
+
+const selectedCuisine = ref('');
+
+
+const addCuisine = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) return alert("Please log in");
+
+  try {
+    await axios.post("http://127.0.0.1:8000/update_favorite_cuisines/", {
+      cuisine_ids: [selectedCuisine.value], // Send selected ID as array
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    alert("Cuisine preference updated!");
+    await userStore.fetchUser(); // Refresh user data after update
+  } catch (err) {
+    console.error("Error updating cuisine:", err);
+    alert("Error saving your choice");
+  }
 };
 
 onMounted(async () => {
